@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dispute Priority Dashboard</title>
+
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+    <style>
+        /* Sticky Header */
+        table.dataTable thead th {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 10;
+        }
+
+        /* Priority row border */
+        .border-L0 { border-left: 6px solid #dc2626 !important; } /* Red */
+        .border-L1 { border-left: 6px solid #f97316 !important; } /* Orange */
+        .border-L2 { border-left: 6px solid #2563eb !important; } /* Blue */
+        .border-L3 { border-left: 6px solid #16a34a !important; } /* Green */
+
+        /* Hover effect */
+        #disputesTable tbody tr:hover {
+            background-color: #f1f5f9 !important;
+        }
+    </style>
+
+</head>
+<body class="bg-gray-100">
+
+    <!-- HEADER -->
+    <div class="p-8 bg-gradient-to-r from-blue-700 to-purple-700 text-white shadow-lg">
+        <h1 class="text-4xl font-extrabold tracking-wide">📊 Dispute Priority Dashboard</h1>
+        <p class="text-sm opacity-90">Unified Priority Engine • SLA Bot </p>
+    </div>
+
+    <div class="p-6">
+
+        <!-- TABLE CARD -->
+        <div class="bg-white p-4 rounded-xl shadow-xl">
+            <table id="disputesTable" class="display stripe hover row-border order-column" style="width:100%">
+                <thead class="text-gray-700">
+                <tr>
+                    <th>Ticket ID</th>
+                    <th>Channel</th>
+                    <th>Amount</th>
+                    <th>Days Open</th>
+                    <th>Complaint Type</th>
+                    <th>Stage</th>
+                    <th>Amount Score</th>
+                    <th>Type Score</th>
+                    <th>Channel Score</th>
+                    <th>Impact Score</th>
+                    <th>Stage Score</th>
+                    <th>SLA Level</th>
+                    <th>SLA Score</th>
+                    <th>Total Score</th>
+                    <th>Priority</th>
+                    <th>Team</th>
+                    <th>Cluster</th>
+                    <th>Updated At</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+
+<script>
+let table = null;
+
+function loadDisputes() {
+    $.getJSON("/static/disputes.json", function (data) {
+
+        if (!table) {
+            // FIRST LOAD
+            table = $('#disputesTable').DataTable({
+                data: data,
+                pageLength: 20,
+                order: [[13, "desc"]],
+                rowCallback: function(row, rowData) {
+                    $(row).removeClass("border-L0 border-L1 border-L2 border-L3");
+                    $(row).addClass("border-" + rowData.recommended_priority);
+                },
+                columns: [
+                    {data: "id"},
+                    {data: "channel"},
+                    {data: "amount"},
+                    {data: "days_open"},
+                    {data: "complaint_type"},
+                    {data: "stage"},
+                    {data: "amount_score"},
+                    {data: "type_score"},
+                    {data: "channel_score"},
+                    {data: "impact_score"},
+                    {data: "stage_score"},
+                    {data: "sla_level"},
+                    {data: "sla_score"},
+                    {data: "total_priority_score"},
+
+                    {
+                        data: "recommended_priority",
+                        render: function (val) {
+                            const colors = {
+                                "L0": "bg-red-600",
+                                "L1": "bg-orange-500",
+                                "L2": "bg-blue-600",
+                                "L3": "bg-green-600"
+                            };
+                            return `<span class="px-2 py-1 rounded text-white text-xs font-bold ${colors[val]}">${val}</span>`;
+                        }
+                    },
+
+                    {data: "route_to_team"},
+                    {data: "cluster_id"},
+                    {data: "ingested_at"},
+                ]
+            });
+        } else {
+            // REFRESH WITHOUT RESETTING PAGE
+            const currentPage = table.page();
+
+            table.clear();
+            table.rows.add(data);
+            table.draw(false);
+
+            table.page(currentPage).draw(false);
+        }
+
+    });
+}
+
+// Load immediately
+loadDisputes();
+
+// Auto-refresh every 10 seconds WITHOUT resetting pagination
+setInterval(loadDisputes, 10000);
+</script>
+
+</body>
+</html>
